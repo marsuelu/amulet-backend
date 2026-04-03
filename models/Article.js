@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
-import { ROLES } from "../config/user";
+// import { ROLES } from "../config/user";
+// const mongoose = require("mongoose");
 
 const ArticleSchema = new mongoose.Schema(
   {

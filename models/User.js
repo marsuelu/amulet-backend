@@ -1,28 +1,25 @@
-import mongoose from "mongoose";
-import { ROLES } from "../config/user";
+const mongoose = require("mongoose");
+const ROLES = ["admin", "manager", "employee"];
 
 const UserSchema = new mongoose.Schema(
   {
-    username: {
+    user_id: {
       type: String,
-      required: "username is required",
+      required: [true, "user_id is required"],
       trim: true,
       unique: true,
       max: 50,
     },
+    username: {
+      type: String,
+      required: [true, "username is required"],
+      trim: true,
+      max: 50,
+    },
     password: {
       type: String,
-      required: "password is required",
-      trim: true,
-      min: 6,
-      max: 20,
+      required: [true, "password is required"],
       select: false,
-    },
-    email: {
-      type: String,
-      required: "email is required",
-      trim: true,
-      unique: true,
     },
     role: {
       type: String,
@@ -33,4 +30,5 @@ const UserSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-export default mongoose.model("User", UserSchema);
+// export default mongoose.model("User", UserSchema);
+module.exports = mongoose.model("User", UserSchema);
