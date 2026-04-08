@@ -1,5 +1,4 @@
 const User = require("../models/User.js");
-// const Article = require("../models/Article");
 const bcrypt = require("bcrypt");
 const RegExp = require("../config/regExp");
 
@@ -37,7 +36,6 @@ const createNewUser = async (req, res) => {
     });
     res.status(201).json({ message: `New user ${username} created` });
   } catch (error) {
-    console.log("error", error);
     res
       .status(400)
       .json({ message: error._message ?? "Invalid user data received." });
@@ -61,7 +59,6 @@ const updateUser = async (req, res) => {
     if (!user) throw new Error("Could not find a matched user.");
     return res.status(201).json({ message: `User ${username} has updated.` });
   } catch (error) {
-    console.log("error", error);
     return res.status(400).json({
       message: error._message ?? error.message ?? "Invalid user data received.",
     });

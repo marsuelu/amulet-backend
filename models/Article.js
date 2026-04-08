@@ -1,13 +1,11 @@
-import mongoose from "mongoose";
-// import { ROLES } from "../config/user";
-// const mongoose = require("mongoose");
+const mongoose = require("mongoose");
 
 const ArticleSchema = new mongoose.Schema(
   {
     title: {
       type: String,
       required: "title is required",
-      max: 200,
+      maxLength: 50,
     },
     content: {
       type: mongoose.Schema.Types.Mixed,
@@ -18,17 +16,13 @@ const ArticleSchema = new mongoose.Schema(
       required: "slug is required",
       unique: true,
       trim: true,
-      max: 200,
+      maxLength: 200,
     }, // unique, used in URL
-    excerpt: {
+    summary: {
       type: String,
-      required: "excerpt is required",
-      max: 200,
+      required: "summary is required",
+      maxLength: 200,
     }, // short preview text for homepage
-    tags: {
-      type: [String],
-      default: [],
-    },
     status: {
       type: String,
       enum: ["draft", "published", "archived"],
@@ -39,8 +33,9 @@ const ArticleSchema = new mongoose.Schema(
       ref: "User",
       required: "createdBy is required",
     },
-    createdTime: {
+    createdAt: {
       type: Date,
+      immutable: true,
       default: Date.now,
     },
     updatedBy: {
@@ -48,12 +43,12 @@ const ArticleSchema = new mongoose.Schema(
       ref: "User",
       required: "updatedBy is required",
     },
-    updatedTime: {
+    updatedAt: {
       type: Date,
-      default: null,
+      default: Date.now,
     },
   },
   { timestamps: true },
 );
 
-export default mongoose.model("Article", ArticleSchema);
+module.exports = mongoose.model("Article", ArticleSchema);
