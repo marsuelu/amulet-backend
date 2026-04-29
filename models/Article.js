@@ -7,6 +7,15 @@ const ArticleSchema = new mongoose.Schema(
       required: "title is required",
       maxLength: 50,
     },
+    summary: {
+      type: String,
+      required: "summary is required",
+      maxLength: 200,
+    }, // short preview text for homepage
+    keywords: {
+      type: [String],
+      required: "keywords is required",
+    }, // keywords for search
     content: {
       type: mongoose.Schema.Types.Mixed,
       required: "content is required",
@@ -15,14 +24,10 @@ const ArticleSchema = new mongoose.Schema(
       type: String,
       required: "slug is required",
       unique: true,
-      trim: true,
+      // trim: true,
       maxLength: 200,
+      set: (v) => v.replace(/\s+/g, "-"),
     }, // unique, used in URL
-    summary: {
-      type: String,
-      required: "summary is required",
-      maxLength: 200,
-    }, // short preview text for homepage
     status: {
       type: String,
       enum: ["draft", "published", "archived"],
@@ -50,5 +55,5 @@ const ArticleSchema = new mongoose.Schema(
   },
   { timestamps: true },
 );
-
+// ArticleSchema.index({ title: "text", summary: "text" });
 module.exports = mongoose.model("Article", ArticleSchema);

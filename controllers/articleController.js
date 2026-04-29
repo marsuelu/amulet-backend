@@ -1,37 +1,34 @@
 const Article = require("../models/Article.js");
-const bcrypt = require("bcrypt");
-const RegExp = require("../config/regExp");
+const Segment = require("segment");
+const segment = new Segment();
+segment.useDefault();
 
+const getKeywords = (title, summary) => {
+  return segment.doSegment(`${title}。${summary}`, {
+    simple: true,
+    stripStopword: true,
+  });
+};
 // @desc Get all articles
 // @route GET /articles
 // @access Private
 const getAllArticles = async (req, res) => {
   try {
-    // 1. Extract
-    let query;
     const { updatedAt = null, createdAt = null, keywords = null } = req.body;
-    if (keywords) {
-      const regex = new RegExp(keywords, "i");
-      query = Article.find({
-        $or: [{ title: { $regex: regex } }, { summary: { $regex: regex } }],
-      });
-    } else {
-      query = Article.find();
-    }
-    if (updatedAt) {
-      query = query.sort({ updatedAt });
-    } else if (createdAt) {
-      query = query.sort({ createdAt });
-    } else {
-      query = query.sort("-updatedAt");
-    }
+    let query = {};
+    let sortOptions = { [updatedAt || createdAt || "updatedAt"]: -1 };
 
-    // 2. Execute the query
-    const list = await query;
-
+    if (keywords && keywords.trim() !== "") {
+      query = { keywords: { $in: keywords.trim().split(/\s+/) } };
+    }
+    // const results = await Article.find(query).sort(sortOptions);
+    const results = await Article.find()
+      .where("keywords")
+      .all(keywords.trim().split(/\s+/))
+      .sort(sortOptions);
     res.status(200).json({
-      total: list.length,
-      data: list,
+      total: results.length || 0,
+      data: results || [],
     });
   } catch (error) {
     res.status(400).json({
@@ -55,12 +52,13 @@ const createNewArticle = async (req, res) => {
       return res
         .status(409)
         .json({ message: "Url for this article is duplicated." });
-
+    const keywords = getKeywords(title, summary);
     await Article.create({
       title,
-      content,
-      slug,
       summary,
+      slug,
+      keywords,
+      content,
       status,
       createdBy,
       updatedBy,
@@ -82,11 +80,17 @@ const updateArticle = async (req, res) => {
     return res.status(400).json({ message: "Update fields are required!" });
   }
   try {
+    // 1.check if the slug is duplicated
     const dupSlugList = await Article.find({ slug, _id: { $ne: id } }).lean();
     if (dupSlugList && dupSlugList.length)
       return res
         .status(409)
         .json({ message: "Url for this article is duplicated." });
+    // 2.check if the article is found
+    const oldArticle = await Article.findById(id).lean();
+    if (!oldArticle)
+      return res.status(400).json({ message: "Original article not found." });
+    // 3.update the article
     const newObj = {
       updatedBy,
       ...(title && { title }),
@@ -95,8 +99,13 @@ const updateArticle = async (req, res) => {
       ...(status && { status }),
       ...(slug && { slug }),
     };
-    const article = await Article.findOneAndUpdate({ _id: id }, newObj);
-    if (!article) throw new Error("Could not find a matched article.");
+    if (title || summary) {
+      const newTitle = title || oldArticle.title;
+      const newSummary = summary || oldArticle.summary;
+      const newKeywords = getKeywords(newTitle, newSummary);
+      newObj.keywords = newKeywords;
+    }
+    await Article.findOneAndUpdate({ _id: id }, newObj);
     return res.status(201).json({ message: `Article ${title} has updated.` });
   } catch (error) {
     return res.status(400).json({
@@ -106,10 +115,10 @@ const updateArticle = async (req, res) => {
 };
 
 // @desc Delete
-// @route DELETE /articles
+// @route DELETE /articles/:id
 // @access Private
 const deleteArticle = async (req, res) => {
-  const { id } = req.body;
+  const { id } = req.params;
   if (!id) {
     return res.status(400).json({ message: "Give me valid article id." });
   }

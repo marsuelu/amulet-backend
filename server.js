@@ -42,6 +42,7 @@ app.all("*splat", (req, res) => {
 
 app.use(errorHandler);
 
+mongoose.set("runValidators", true);
 mongoose.connection.once("open", () => {
   console.log("connected to mongoDB");
   app.listen(PORT, () => {

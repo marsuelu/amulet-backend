@@ -4,9 +4,10 @@ const articleController = require("../controllers/articleController");
 
 router
   .route("/")
-  .get(articleController.getAllArticles)
+  .post(articleController.getAllArticles)
   .post(articleController.createNewArticle)
-  .patch(articleController.updateArticle)
-  .delete(articleController.deleteArticle);
+  .patch(articleController.updateArticle);
+
+router.route("/:id").delete(articleController.deleteArticle);
 
 module.exports = router;
