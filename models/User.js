@@ -26,6 +26,10 @@ const UserSchema = new mongoose.Schema(
       enum: ROLES,
       default: ROLES[2],
     },
+    active: {
+      type: Boolean,
+      default: true,
+    },
   },
   { timestamps: true },
 );

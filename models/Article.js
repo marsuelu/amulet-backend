@@ -53,7 +53,9 @@ const ArticleSchema = new mongoose.Schema(
       default: Date.now,
     },
   },
-  { timestamps: true },
+  {
+    timestamps: true, // auto add both fields  'createdAt' and 'updatedAt'
+  },
 );
 // ArticleSchema.index({ title: "text", summary: "text" });
 module.exports = mongoose.model("Article", ArticleSchema);

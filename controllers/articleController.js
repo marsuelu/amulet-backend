@@ -14,21 +14,56 @@ const getKeywords = (title, summary) => {
 // @access Private
 const getAllArticles = async (req, res) => {
   try {
-    const { updatedAt = null, createdAt = null, keywords = null } = req.body;
-    let query = {};
-    let sortOptions = { [updatedAt || createdAt || "updatedAt"]: -1 };
+    const {
+      sortOrder = null,
+      keywords = null,
+      status,
+      page = 1,
+      limit = 10,
+    } = req.body;
+    // let query = {};
+    let sortOptions = sortOrder ?? { updatedAt: -1 };
 
-    if (keywords && keywords.trim() !== "") {
+    /* if (keywords && keywords.trim() !== "") {
       query = { keywords: { $in: keywords.trim().split(/\s+/) } };
+    } */
+    const matchStage = { status };
+    if (keywords && keywords.trim() !== "") {
+      matchStage.keywords = { $in: keywords.trim().split(/\s+/) };
     }
-    // const results = await Article.find(query).sort(sortOptions);
-    const results = await Article.find()
-      .where("keywords")
-      .all(keywords.trim().split(/\s+/))
-      .sort(sortOptions);
-    res.status(200).json({
-      total: results.length || 0,
-      data: results || [],
+    const skipDocuments = (parseInt(page) - 1) * parseInt(limit);
+    const result = await Article.aggregate([
+      { $match: matchStage },
+      {
+        $facet: {
+          // Branch 1: Fetch the actual paginated data
+          data: [
+            { $sort: sortOptions },
+            { $skip: skipDocuments },
+            { $limit: parseInt(limit) },
+          ],
+          // Branch 2: Get the total count of matching documents
+          totalCount: [{ $count: "count" }],
+        },
+      },
+    ]);
+
+    const articles = result[0].data.map((a) => {
+      const obj = {
+        ...a,
+        id: a._id,
+      };
+      delete obj._id;
+      return obj;
+    });
+    const total = result[0].totalCount[0]?.count || 0;
+
+    return res.status(200).json({
+      articles,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
     });
   } catch (error) {
     res.status(400).json({
@@ -75,7 +110,12 @@ const createNewArticle = async (req, res) => {
 // @route PATCH /articles
 // @access Private
 const updateArticle = async (req, res) => {
-  const { title, content, summary, status, updatedBy, id, slug } = req.body;
+  // get user id from request through the access token
+  const user_id = req.user.user_id;
+  console.log("update article req", req);
+  console.log("update article user_id", user_id);
+  const { id } = req.params;
+  const { title, content, summary, status, updatedBy, slug } = req.body;
   if (!updatedBy || !id || !(title || content || summary || status || slug)) {
     return res.status(400).json({ message: "Update fields are required!" });
   }
